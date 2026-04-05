@@ -61,9 +61,9 @@
         button:disabled { background-color: #ccc !important; cursor: not-allowed; }
 
         #generate-btn { background-color: #3b82f6; color: white; }
+        #download-btn { background-color: #10b981; color: white; margin-top: 10px; display: none; }
         #reset-btn { background-color: #cc4b4b; color: white; }
 
-        /* 結果表示エリア（ボタンのすぐ下） */
         #preview-container { text-align: center; width: 100%; margin-top: 5px; }
         #result-gif { max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px; }
         #status { font-size: 0.85rem; color: #3b82f6; font-weight: bold; text-align: center; height: 1.2rem; }
@@ -80,9 +80,6 @@
             color: #555;
             border: 1px solid #eee;
         }
-        .guide h2 { font-size: 1rem; margin-top: 0; color: #333; border-bottom: 2px solid #3b82f6; display: inline-block; padding-bottom: 2px; }
-        .guide ul { padding-left: 18px; margin: 10px 0; }
-        .important { color: #cc4b4b; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -91,7 +88,7 @@
 
     <div class="container">
         <div>
-            <label>画像を選択（PNG推奨）</label>
+            <label>画像を選択</label>
             <input type="file" id="image-input" multiple accept="image/*">
         </div>
 
@@ -104,8 +101,9 @@
         
         <div id="preview-container">
             <div id="status"></div>
-            <div id="result-label" style="display:none; margin: 10px 0; font-weight:bold; font-size: 0.9rem;">完成！（長押しで保存）</div>
+            <div id="result-label" style="display:none; margin: 10px 0; font-weight:bold; font-size: 0.9rem;">完成！</div>
             <img id="result-gif" style="display:none;">
+            <button id="download-btn">画像をGIFとして保存</button>
         </div>
 
         <button id="reset-btn">リセット</button>
@@ -114,10 +112,10 @@
     <div class="guide">
         <h2>📖 つかいかた</h2>
         <ul>
-            <li><strong>① 画像を選ぶ:</strong> <span class="important">1枚だけでもOK！</span>複数選ぶとパラパラ漫画になります。</li>
-            <li><strong>② 速さを決める:</strong> 数字が小さいほど速くなります（500ms＝0.5秒）。</li>
-            <li><strong>③ 作成ボタン:</strong> 青いボタンを押すと、すぐ下にGIFが表示されます。</li>
-            <li><strong>④ 保存する:</strong> できた画像を<span class="important">「長押し」</span>して保存してください。</li>
+            <li>① 画像を選びます（1枚でもOK）。</li>
+            <li>② 青いボタンで作成します。</li>
+            <li>③ 完成したら緑色の<strong>「保存ボタン」</strong>を押してください。</li>
+            <li>④ スマホの「ファイル」アプリや写真に保存されます。</li>
         </ul>
     </div>
 
@@ -126,14 +124,16 @@
         const imageInput = document.getElementById('image-input');
         const delayInput = document.getElementById('delay-input');
         const generateBtn = document.getElementById('generate-btn');
+        const downloadBtn = document.getElementById('download-btn');
         const resetBtn = document.getElementById('reset-btn');
         const status = document.getElementById('status');
         const resultGif = document.getElementById('result-gif');
         const resultLabel = document.getElementById('result-label');
 
+        let currentBlob = null;
+
         generateBtn.addEventListener('click', async () => {
             const files = imageInput.files;
-            // 画像が1枚も選択されていない場合はエラー
             if (files.length < 1) {
                 alert('画像を選択してください');
                 return;
@@ -141,59 +141,62 @@
 
             status.textContent = '⌛ 生成中...';
             generateBtn.disabled = true;
+            downloadBtn.style.display = 'none';
             resultGif.style.display = 'none';
-            resultGif.src = '';
-            resultLabel.style.display = 'none';
 
-            // GIF作成の初期設定
             const gif = new GIF({
                 workers: 2,
                 quality: 10,
-                workerScript: 'gif.worker.js' // 同じフォルダにある worker ファイルを指定
+                workerScript: 'gif.worker.js'
             });
 
             const delay = parseInt(delayInput.value);
 
-            // 【ここが修正ポイント】
             if (files.length === 1) {
-                // 画像が1枚だけの場合
                 const img = await loadImage(files[0]);
-                // 同じ画像を2回追加することで、GIFアニメーションとして成立させる
                 gif.addFrame(img, { delay: delay, copy: true });
                 gif.addFrame(img, { delay: delay, copy: true });
             } else {
-                // 画像が2枚以上の場合（通常処理）
                 for (let file of files) {
                     const img = await loadImage(file);
                     gif.addFrame(img, { delay: delay, copy: true });
                 }
             }
 
-            // GIF生成が完了した時の処理
             gif.on('finished', (blob) => {
+                currentBlob = blob;
                 const url = URL.createObjectURL(blob);
                 resultGif.src = url;
                 resultGif.style.display = 'inline-block';
                 resultLabel.style.display = 'block';
+                downloadBtn.style.display = 'block'; // 保存ボタンを表示
                 status.textContent = '✅ 完成！';
                 generateBtn.disabled = false;
             });
 
-            // GIFのレンダリングを開始
             gif.render();
         });
 
-        // リセットボタンの処理
+        // ダウンロード処理
+        downloadBtn.addEventListener('click', () => {
+            if (!currentBlob) return;
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(currentBlob);
+            link.download = 'created_image.gif'; // ここで拡張子を強制
+            link.click();
+        });
+
         resetBtn.addEventListener('click', () => {
             imageInput.value = '';
             delayInput.value = '500';
             resultGif.style.display = 'none';
             resultGif.src = '';
             resultLabel.style.display = 'none';
+            downloadBtn.style.display = 'none';
             status.textContent = '';
+            currentBlob = null;
         });
 
-        // ファイルを画像オブジェクトとして読み込む関数
         function loadImage(file) {
             return new Promise((resolve) => {
                 const img = new Image();
