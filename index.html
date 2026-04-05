@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GIF作成ツール</title>
+    <style>
+        /* 全体のレイアウト調整（はみ出し防止） */
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            background-color: #f0f0f0;
+            box-sizing: border-box;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        h1 { font-size: 1.5rem; color: #333; }
+
+        /* コンテナ設定 */
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-sizing: border-box;
+        }
+
+        /* 入力エリア */
+        input[type="file"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        /* ボタン共通設定 */
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        /* 作成ボタン（青） */
+        #generate-btn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        /* リセットボタン（赤） */
+        #reset-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        button:active { opacity: 0.8; }
+
+        /* プレビューエリア */
+        #preview-container {
+            margin-top: 20px;
+            width: 100%;
+            text-align: center;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        #status {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>GIF作成ツール</h1>
+
+    <div class="container">
+        <div>
+            <label>画像を選択（複数）</label>
+            <input type="file" id="image-input" multiple accept="image/*">
+        </div>
+
+        <div>
+            <label>遅延時間 (ms):</label>
+            <input type="number" id="delay-input" value="500" step="100">
+        </div>
+
+        <button id="generate-btn">GIFを作成する</button>
+        <button id="reset-btn">リセット</button>
+
+        <div id="status"></div>
+    </div>
+
+    <div id="preview-container">
+        <div id="result-label" style="display:none; margin-bottom:10px;">完成したGIF（長押しで保存）:</div>
+        <img id="result-gif" style="display:none;">
+    </div>
+
+    <script src="gif.js"></script>
+    <script>
+        const imageInput = document.getElementById('image-input');
+        const delayInput = document.getElementById('delay-input');
+        const generateBtn = document.getElementById('generate-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const status = document.getElementById('status');
+        const resultGif = document.getElementById('result-gif');
+        const resultLabel = document.getElementById('result-label');
+
+        // GIF作成処理
+        generateBtn.addEventListener('click', async () => {
+            const files = imageInput.files;
+            if (files.length < 2) {
+                alert('画像を2枚以上選択してください');
+                return;
+            }
+
+            status.textContent = 'GIFを生成中...';
+            generateBtn.disabled = true;
+
+            const gif = new GIF({
+                workers: 2,
+                quality: 10,
+                workerScript: 'gif.worker.js'
+            });
+
+            const delay = parseInt(delayInput.value);
+
+            for (let file of files) {
+                const img = await loadImage(file);
+                gif.addFrame(img, { delay: delay, copy: true });
+            }
+
+            gif.on('finished', (blob) => {
+                const url = URL.createObjectURL(blob);
+                resultGif.src = url;
+                resultGif.style.display = 'inline-block';
+                resultLabel.style.display = 'block';
+                status.textContent = '完成！画像を長押しして保存してください。';
+                generateBtn.disabled = false;
+            });
+
+            gif.render();
+        });
+
+        // リセット処理
+        resetBtn.addEventListener('click', () => {
+            imageInput.value = '';
+            delayInput.value = '500';
+            resultGif.style.display = 'none';
+            resultGif.src = '';
+            resultLabel.style.display = 'none';
+            status.textContent = 'リセットしました。';
+        });
+
+        // 画像読み込み用関数
+        function loadImage(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = URL.createObjectURL(file);
+            });
+        }
+    </script>
+</body>
+</html>
