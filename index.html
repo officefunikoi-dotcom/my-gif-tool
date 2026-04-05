@@ -46,6 +46,29 @@
             background-color: #fafafa;
         }
 
+        /* プレビューエリアのスタイル */
+        #live-preview-container {
+            width: 100%;
+            text-align: center;
+            display: none; /* 画像選択前は非表示 */
+            background: #f9f9fb;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px dashed #ccc;
+            margin-bottom: 5px;
+        }
+        #live-preview-img {
+            max-width: 120px; /* 小さめに表示 */
+            height: auto;
+            border-radius: 6px;
+        }
+        .preview-label {
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: 5px;
+            display: block;
+        }
+
         button {
             width: 100%;
             padding: 15px;
@@ -72,7 +95,6 @@
             padding: 8px; 
             border-radius: 6px; 
             line-height: 1.4;
-            text-align: left;
         }
 
         #status { font-size: 0.9rem; color: #3b82f6; font-weight: bold; text-align: center; min-height: 1.2rem; margin: 5px 0; }
@@ -98,17 +120,21 @@
 
     <div class="container">
         <div>
-            <label>画像を選択</label>
+            <label>① 画像を選択</label>
             <input type="file" id="image-input" multiple accept="image/*">
         </div>
 
+        <div id="live-preview-container">
+            <span class="preview-label">現在の速さプレビュー</span>
+            <img id="live-preview-img">
+        </div>
+
         <div>
-            <label>遅延時間 (ms):</label>
+            <label>② 遅延時間 (ms):</label>
             <input type="number" id="delay-input" value="500" step="100">
         </div>
 
         <button id="generate-btn">GIFを作成する</button>
-        
         <button id="download-btn">画像をGIFとして保存</button>
 
         <div id="iphone-notice">
@@ -116,7 +142,6 @@
         </div>
 
         <div id="status"></div>
-        
         <img id="result-gif">
 
         <button id="reset-btn">リセット</button>
@@ -125,10 +150,10 @@
     <div class="guide">
         <h2>📖 つかいかた</h2>
         <ul>
-            <li>① 画像を選びます（1枚でもOK）。</li>
-            <li>② 青いボタンで作成します。</li>
-            <li>③ 緑色のボタンで保存します。</li>
-            <li>④ スマホの「ファイル」アプリなどに保存されます。</li>
+            <li>① 画像を選びます。</li>
+            <li>② 遅延時間を変えると上のプレビューの速さが変わります。</li>
+            <li>③ 納得したら青いボタンで作成！</li>
+            <li>④ 緑色のボタンで保存します。</li>
         </ul>
     </div>
 
@@ -142,9 +167,65 @@
         const resetBtn = document.getElementById('reset-btn');
         const status = document.getElementById('status');
         const resultGif = document.getElementById('result-gif');
+        
+        const previewContainer = document.getElementById('live-preview-container');
+        const previewImg = document.getElementById('live-preview-img');
 
         let currentBlob = null;
+        let previewImages = [];
+        let previewIndex = 0;
+        let previewTimer = null;
 
+        // プレビューのループ処理
+        function startPreview() {
+            stopPreview();
+            if (previewImages.length === 0) return;
+
+            const run = () => {
+                previewImg.src = previewImages[previewIndex];
+                previewIndex = (previewIndex + 1) % previewImages.length;
+                const delay = parseInt(delayInput.value) || 500;
+                previewTimer = setTimeout(run, delay);
+            };
+
+            // 2枚以上あるときだけアニメーションさせる
+            if (previewImages.length > 1) {
+                run();
+            } else {
+                previewImg.src = previewImages[0];
+            }
+        }
+
+        function stopPreview() {
+            if (previewTimer) clearTimeout(previewTimer);
+        }
+
+        // 画像が選択された時の処理
+        imageInput.addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if (files.length === 0) {
+                previewContainer.style.display = 'none';
+                return;
+            }
+
+            previewImages = [];
+            for (let file of files) {
+                previewImages.push(URL.createObjectURL(file));
+            }
+            
+            previewIndex = 0;
+            previewContainer.style.display = 'block';
+            startPreview();
+        });
+
+        // 遅延時間が変更されたら即座にプレビューに反映
+        delayInput.addEventListener('input', () => {
+            if (previewImages.length > 1) {
+                startPreview();
+            }
+        });
+
+        // GIF生成処理
         generateBtn.addEventListener('click', async () => {
             const files = imageInput.files;
             if (files.length < 1) {
@@ -166,13 +247,11 @@
 
             const delay = parseInt(delayInput.value);
 
-            if (files.length === 1) {
-                const img = await loadImage(files[0]);
+            for (let i = 0; i < files.length; i++) {
+                const img = await loadImage(files[i]);
                 gif.addFrame(img, { delay: delay, copy: true });
-                gif.addFrame(img, { delay: delay, copy: true });
-            } else {
-                for (let file of files) {
-                    const img = await loadImage(file);
+                // 1枚のみの場合は2フレーム追加してGIFにする
+                if (files.length === 1) {
                     gif.addFrame(img, { delay: delay, copy: true });
                 }
             }
@@ -183,7 +262,7 @@
                 resultGif.src = url;
                 resultGif.style.display = 'block';
                 downloadBtn.style.display = 'block';
-                iphoneNotice.style.display = 'block'; // 注釈を表示
+                iphoneNotice.style.display = 'block';
                 status.textContent = '✅ 完成！';
                 generateBtn.disabled = false;
             });
@@ -200,8 +279,11 @@
         });
 
         resetBtn.addEventListener('click', () => {
+            stopPreview();
             imageInput.value = '';
             delayInput.value = '500';
+            previewImages = [];
+            previewContainer.style.display = 'none';
             resultGif.style.display = 'none';
             resultGif.src = '';
             downloadBtn.style.display = 'none';
