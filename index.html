@@ -112,9 +112,12 @@
             color: #555;
             border: 1px solid #eee;
         }
-        .guide h2 { font-size: 1rem; margin-top: 0; }
-        .guide ul { padding-left: 20px; }
-        .guide li { margin-bottom: 8px; }
+        .guide h2 { font-size: 1rem; margin-top: 0; color: #333; }
+        .guide h3 { font-size: 0.9rem; margin: 15px 0 5px 0; color: #3b82f6; }
+        .guide ul { padding-left: 20px; margin: 5px 0; }
+        .guide li { margin-bottom: 6px; list-style-type: disc; }
+        .speed-tip { background: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 0.8rem; border-left: 4px solid #3b82f6; }
+        .speed-tip div { margin-bottom: 4px; }
     </style>
 </head>
 <body>
@@ -152,15 +155,25 @@
 
     <div class="guide">
         <h2>📖 つかいかた</h2>
+        
+        <h3>1. 画像を選ぶ</h3>
         <ul>
-            <li>① <strong>画像を選びます。</strong>
-                <ul>
-                    <li>1枚選ぶと、静止画に見えるGIFになります。</li>
-                    <li>複数枚選ぶときは、<strong>動かしたい順番に</strong>タップして選択してください。</li>
-                </ul>
-            </li>
-            <li>② プレビューで速さを確認し、納得したら青いボタンで作成！</li>
-            <li>③ 完成したら緑色のボタンで保存します。</li>
+            <li>1枚選ぶと、静止画のまま形式をGIFに変換します。</li>
+            <li>複数枚選ぶときは、<strong>動かしたい順番に</strong>タップして選択してください。</li>
+        </ul>
+
+        <h3>2. 速さを決める (遅延時間)</h3>
+        <p>数字を書き換えると、プレビューの速さが変わります。</p>
+        <div class="speed-tip">
+            <div>・<strong>100〜200：</strong> まばたき等の素早い動き</div>
+            <div>・<strong>500：</strong> 自然なパラパラ漫画 (0.5秒間隔)</div>
+            <div>・<strong>1000以上：</strong> じっくり見せたい時 (1秒〜)</div>
+        </div>
+
+        <h3>3. 作成と保存</h3>
+        <ul>
+            <li>青いボタンで作成し、緑のボタンで保存してください。</li>
+            <li>保存した画像はスマホの「ファイル」アプリ等に入ります。</li>
         </ul>
     </div>
 
