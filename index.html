@@ -46,7 +46,6 @@
             background-color: #fafafa;
         }
 
-        /* プレビューエリア */
         #live-preview-container {
             width: 100%;
             text-align: center;
@@ -87,18 +86,19 @@
         #download-btn { background-color: #10b981; color: white; display: none; }
         #reset-btn { background-color: #cc4b4b; color: white; margin-top: 10px; }
 
+        #status { font-size: 1rem; color: #3b82f6; font-weight: bold; text-align: center; min-height: 1.5rem; margin-top: 10px; }
+
         #iphone-notice { 
             display: none; 
             font-size: 0.75rem; 
             color: #666; 
             background: #f0fdf4; 
-            padding: 8px; 
+            padding: 10px; 
             border-radius: 6px; 
             line-height: 1.4;
             text-align: left;
+            margin-bottom: 5px;
         }
-
-        #status { font-size: 1rem; color: #3b82f6; font-weight: bold; text-align: center; min-height: 1.5rem; margin: 10px 0; }
 
         .guide {
             width: 100%;
@@ -137,11 +137,12 @@
         <button id="generate-btn">GIFを作成する</button>
         
         <div id="status"></div>
-        <button id="download-btn">画像をGIFとして保存</button>
 
         <div id="iphone-notice">
             ※iPhoneの場合、保存後に「表示」か「ダウンロード」か聞かれたら<strong>「ダウンロード」</strong>を選んでください。
         </div>
+
+        <button id="download-btn">画像をGIFとして保存</button>
 
         <button id="reset-btn">リセット</button>
     </div>
@@ -249,9 +250,9 @@
 
             gif.on('finished', (blob) => {
                 currentBlob = blob;
-                downloadBtn.style.display = 'block';
-                iphoneNotice.style.display = 'block';
                 status.textContent = '✅ 完成！';
+                iphoneNotice.style.display = 'block';
+                downloadBtn.style.display = 'block';
                 generateBtn.disabled = false;
             });
 
