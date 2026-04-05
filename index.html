@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GIF作成ツール</title>
+    <title>PNG→GIF変換ツール</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -63,7 +63,7 @@
         #generate-btn { background-color: #3b82f6; color: white; }
         #reset-btn { background-color: #cc4b4b; color: white; }
 
-        /* 結果表示エリア（ボタンのすぐ下に来るように配置） */
+        /* 結果表示エリア（ボタンのすぐ下） */
         #preview-container { text-align: center; width: 100%; margin-top: 5px; }
         #result-gif { max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px; }
         #status { font-size: 0.85rem; color: #3b82f6; font-weight: bold; text-align: center; height: 1.2rem; }
@@ -87,11 +87,11 @@
 </head>
 <body>
 
-    <h1>GIF作成ツール</h1>
+    <h1>PNG→GIF変換ツール</h1>
 
     <div class="container">
         <div>
-            <label>画像を選択</label>
+            <label>画像を選択（PNG推奨）</label>
             <input type="file" id="image-input" multiple accept="image/*">
         </div>
 
@@ -114,10 +114,10 @@
     <div class="guide">
         <h2>📖 つかいかた</h2>
         <ul>
-            <li><strong>① 画像を選ぶ:</strong> 1枚でも複数でもOK！</li>
-            <li><strong>② 速さを決める:</strong> 数字が小さいほど速くなります。</li>
+            <li><strong>① 画像を選ぶ:</strong> <span class="important">1枚だけでもOK！</span>複数選ぶとパラパラ漫画になります。</li>
+            <li><strong>② 速さを決める:</strong> 数字が小さいほど速くなります（500ms＝0.5秒）。</li>
             <li><strong>③ 作成ボタン:</strong> 青いボタンを押すと、すぐ下にGIFが表示されます。</li>
-            <li><strong>④ 保存する:</strong> できた画像を<span class="important">「長押し」</span>して保存！</li>
+            <li><strong>④ 保存する:</strong> できた画像を<span class="important">「長押し」</span>して保存してください。</li>
         </ul>
     </div>
 
@@ -133,6 +133,7 @@
 
         generateBtn.addEventListener('click', async () => {
             const files = imageInput.files;
+            // 画像が1枚も選択されていない場合はエラー
             if (files.length < 1) {
                 alert('画像を選択してください');
                 return;
@@ -141,27 +142,34 @@
             status.textContent = '⌛ 生成中...';
             generateBtn.disabled = true;
             resultGif.style.display = 'none';
+            resultGif.src = '';
             resultLabel.style.display = 'none';
 
+            // GIF作成の初期設定
             const gif = new GIF({
                 workers: 2,
                 quality: 10,
-                workerScript: 'gif.worker.js'
+                workerScript: 'gif.worker.js' // 同じフォルダにある worker ファイルを指定
             });
 
             const delay = parseInt(delayInput.value);
 
+            // 【ここが修正ポイント】
             if (files.length === 1) {
+                // 画像が1枚だけの場合
                 const img = await loadImage(files[0]);
+                // 同じ画像を2回追加することで、GIFアニメーションとして成立させる
                 gif.addFrame(img, { delay: delay, copy: true });
                 gif.addFrame(img, { delay: delay, copy: true });
             } else {
+                // 画像が2枚以上の場合（通常処理）
                 for (let file of files) {
                     const img = await loadImage(file);
                     gif.addFrame(img, { delay: delay, copy: true });
                 }
             }
 
+            // GIF生成が完了した時の処理
             gif.on('finished', (blob) => {
                 const url = URL.createObjectURL(blob);
                 resultGif.src = url;
@@ -171,9 +179,11 @@
                 generateBtn.disabled = false;
             });
 
+            // GIFのレンダリングを開始
             gif.render();
         });
 
+        // リセットボタンの処理
         resetBtn.addEventListener('click', () => {
             imageInput.value = '';
             delayInput.value = '500';
@@ -183,6 +193,7 @@
             status.textContent = '';
         });
 
+        // ファイルを画像オブジェクトとして読み込む関数
         function loadImage(file) {
             return new Promise((resolve) => {
                 const img = new Image();
