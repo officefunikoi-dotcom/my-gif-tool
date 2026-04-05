@@ -46,11 +46,11 @@
             background-color: #fafafa;
         }
 
-        /* プレビューエリアのスタイル */
+        /* プレビューエリア */
         #live-preview-container {
             width: 100%;
             text-align: center;
-            display: none; /* 画像選択前は非表示 */
+            display: none;
             background: #f9f9fb;
             padding: 10px;
             border-radius: 10px;
@@ -58,7 +58,7 @@
             margin-bottom: 5px;
         }
         #live-preview-img {
-            max-width: 120px; /* 小さめに表示 */
+            max-width: 120px;
             height: auto;
             border-radius: 6px;
         }
@@ -95,10 +95,10 @@
             padding: 8px; 
             border-radius: 6px; 
             line-height: 1.4;
+            text-align: left;
         }
 
-        #status { font-size: 0.9rem; color: #3b82f6; font-weight: bold; text-align: center; min-height: 1.2rem; margin: 5px 0; }
-        #result-gif { max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: none; margin-top: 10px; }
+        #status { font-size: 1rem; color: #3b82f6; font-weight: bold; text-align: center; min-height: 1.5rem; margin: 10px 0; }
 
         .guide {
             width: 100%;
@@ -135,14 +135,13 @@
         </div>
 
         <button id="generate-btn">GIFを作成する</button>
+        
+        <div id="status"></div>
         <button id="download-btn">画像をGIFとして保存</button>
 
         <div id="iphone-notice">
             ※iPhoneの場合、保存後に「表示」か「ダウンロード」か聞かれたら<strong>「ダウンロード」</strong>を選んでください。
         </div>
-
-        <div id="status"></div>
-        <img id="result-gif">
 
         <button id="reset-btn">リセット</button>
     </div>
@@ -151,9 +150,9 @@
         <h2>📖 つかいかた</h2>
         <ul>
             <li>① 画像を選びます。</li>
-            <li>② 遅延時間を変えると上のプレビューの速さが変わります。</li>
+            <li>② プレビューで速さを確認します。</li>
             <li>③ 納得したら青いボタンで作成！</li>
-            <li>④ 緑色のボタンで保存します。</li>
+            <li>④ 完成したら緑色のボタンで保存します。</li>
         </ul>
     </div>
 
@@ -166,7 +165,6 @@
         const iphoneNotice = document.getElementById('iphone-notice');
         const resetBtn = document.getElementById('reset-btn');
         const status = document.getElementById('status');
-        const resultGif = document.getElementById('result-gif');
         
         const previewContainer = document.getElementById('live-preview-container');
         const previewImg = document.getElementById('live-preview-img');
@@ -176,7 +174,6 @@
         let previewIndex = 0;
         let previewTimer = null;
 
-        // プレビューのループ処理
         function startPreview() {
             stopPreview();
             if (previewImages.length === 0) return;
@@ -188,7 +185,6 @@
                 previewTimer = setTimeout(run, delay);
             };
 
-            // 2枚以上あるときだけアニメーションさせる
             if (previewImages.length > 1) {
                 run();
             } else {
@@ -200,8 +196,7 @@
             if (previewTimer) clearTimeout(previewTimer);
         }
 
-        // 画像が選択された時の処理
-        imageInput.addEventListener('change', async (e) => {
+        imageInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files.length === 0) {
                 previewContainer.style.display = 'none';
@@ -218,14 +213,12 @@
             startPreview();
         });
 
-        // 遅延時間が変更されたら即座にプレビューに反映
         delayInput.addEventListener('input', () => {
             if (previewImages.length > 1) {
                 startPreview();
             }
         });
 
-        // GIF生成処理
         generateBtn.addEventListener('click', async () => {
             const files = imageInput.files;
             if (files.length < 1) {
@@ -237,7 +230,6 @@
             generateBtn.disabled = true;
             downloadBtn.style.display = 'none';
             iphoneNotice.style.display = 'none';
-            resultGif.style.display = 'none';
 
             const gif = new GIF({
                 workers: 2,
@@ -250,7 +242,6 @@
             for (let i = 0; i < files.length; i++) {
                 const img = await loadImage(files[i]);
                 gif.addFrame(img, { delay: delay, copy: true });
-                // 1枚のみの場合は2フレーム追加してGIFにする
                 if (files.length === 1) {
                     gif.addFrame(img, { delay: delay, copy: true });
                 }
@@ -258,9 +249,6 @@
 
             gif.on('finished', (blob) => {
                 currentBlob = blob;
-                const url = URL.createObjectURL(blob);
-                resultGif.src = url;
-                resultGif.style.display = 'block';
                 downloadBtn.style.display = 'block';
                 iphoneNotice.style.display = 'block';
                 status.textContent = '✅ 完成！';
@@ -284,8 +272,6 @@
             delayInput.value = '500';
             previewImages = [];
             previewContainer.style.display = 'none';
-            resultGif.style.display = 'none';
-            resultGif.src = '';
             downloadBtn.style.display = 'none';
             iphoneNotice.style.display = 'none';
             status.textContent = '';
