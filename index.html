@@ -58,11 +58,16 @@
         }
 
         button:active { transform: scale(0.98); opacity: 0.9; }
+        button:disabled { background-color: #ccc !important; cursor: not-allowed; }
 
         #generate-btn { background-color: #3b82f6; color: white; }
         #reset-btn { background-color: #cc4b4b; color: white; }
 
-        /* 説明ガイドのスタイル */
+        /* 結果表示エリア（ボタンのすぐ下に来るように配置） */
+        #preview-container { text-align: center; width: 100%; margin-top: 5px; }
+        #result-gif { max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 10px; }
+        #status { font-size: 0.85rem; color: #3b82f6; font-weight: bold; text-align: center; height: 1.2rem; }
+
         .guide {
             width: 100%;
             max-width: 360px;
@@ -75,15 +80,9 @@
             color: #555;
             border: 1px solid #eee;
         }
-
         .guide h2 { font-size: 1rem; margin-top: 0; color: #333; border-bottom: 2px solid #3b82f6; display: inline-block; padding-bottom: 2px; }
         .guide ul { padding-left: 18px; margin: 10px 0; }
-        .guide li { margin-bottom: 8px; }
         .important { color: #cc4b4b; font-weight: bold; }
-
-        #preview-container { margin-top: 25px; text-align: center; width: 100%; }
-        img { max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        #status { font-size: 0.85rem; color: #888; text-align: center; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -102,25 +101,24 @@
         </div>
 
         <button id="generate-btn">GIFを作成する</button>
-        <button id="reset-btn">リセット</button>
+        
+        <div id="preview-container">
+            <div id="status"></div>
+            <div id="result-label" style="display:none; margin: 10px 0; font-weight:bold; font-size: 0.9rem;">完成！（長押しで保存）</div>
+            <img id="result-gif" style="display:none;">
+        </div>
 
-        <div id="status"></div>
+        <button id="reset-btn">リセット</button>
     </div>
 
     <div class="guide">
         <h2>📖 つかいかた</h2>
         <ul>
-            <li><strong>① 画像を選ぶ:</strong> 「ファイルを選択」から画像を選びます。1枚だけでもOK！複数選ぶとパラパラ漫画になります。</li>
-            <li><strong>② 速さを決める:</strong> 「遅延時間」の数字をいじります。数字を小さくすると速く、大きくするとゆっくり動きます（500ms＝0.5秒）。</li>
-            <li><strong>③ 作成ボタン:</strong> 青いボタンを押して少し待つと、下にGIFが表示されます。</li>
-            <li><strong>④ 保存する:</strong> できた画像を<span class="important">「長押し」</span>して保存してください。</li>
+            <li><strong>① 画像を選ぶ:</strong> 1枚でも複数でもOK！</li>
+            <li><strong>② 速さを決める:</strong> 数字が小さいほど速くなります。</li>
+            <li><strong>③ 作成ボタン:</strong> 青いボタンを押すと、すぐ下にGIFが表示されます。</li>
+            <li><strong>④ 保存する:</strong> できた画像を<span class="important">「長押し」</span>して保存！</li>
         </ul>
-        <p style="margin-bottom: 0;">※リセットボタンを押すと、選んだ画像や結果がすべて消去されます。</p>
-    </div>
-
-    <div id="preview-container">
-        <div id="result-label" style="display:none; margin-bottom:10px; font-weight:bold;">完成したGIF:</div>
-        <img id="result-gif" style="display:none;">
     </div>
 
     <script src="gif.js"></script>
@@ -140,8 +138,10 @@
                 return;
             }
 
-            status.textContent = 'GIFを生成中...';
+            status.textContent = '⌛ 生成中...';
             generateBtn.disabled = true;
+            resultGif.style.display = 'none';
+            resultLabel.style.display = 'none';
 
             const gif = new GIF({
                 workers: 2,
@@ -167,7 +167,7 @@
                 resultGif.src = url;
                 resultGif.style.display = 'inline-block';
                 resultLabel.style.display = 'block';
-                status.textContent = '完成！';
+                status.textContent = '✅ 完成！';
                 generateBtn.disabled = false;
             });
 
@@ -180,7 +180,7 @@
             resultGif.style.display = 'none';
             resultGif.src = '';
             resultLabel.style.display = 'none';
-            status.textContent = 'リセットしました。';
+            status.textContent = '';
         });
 
         function loadImage(file) {
